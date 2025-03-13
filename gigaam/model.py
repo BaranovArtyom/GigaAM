@@ -154,10 +154,37 @@ class GigaAMASR(GigaAM):
             wav, SAMPLE_RATE, device=self._device, **kwargs
         )
         for segment, segment_boundaries in zip(segments, boundaries):
+            if segment.numel() == 0:  # Проверка на пустой сегмент
+                print(f"Пустой сегмент — пропуск: {segment_boundaries}")
+                continue
+            
             wav = segment.to(self._device).unsqueeze(0).to(self._dtype)
+            
+            # Проверка на пустой сигнал после преобразования
+            if wav.shape[-1] == 0:
+                print(f"Пустой сигнал после преобразования — пропуск: {segment_boundaries}")
+                continue
+            
             length = torch.full([1], wav.shape[-1], device=self._device)
-            encoded, encoded_len = self.forward(wav, length)
+            
+            # Если длина равна 0 — пропускаем сегмент
+            if length.item() == 0:
+                print(f"Длина сегмента равна 0 — пропуск: {segment_boundaries}")
+                continue
+            
+            try:
+                encoded, encoded_len = self.forward(wav, length)
+            except Exception as e:
+                print(f"Ошибка при обработке сегмента: {e}")
+                continue
+            
+            # Проверка на пустые результаты после обработки
+            if encoded_len.item() == 0:
+                print(f"Пустое значение после обработки — пропуск: {segment_boundaries}")
+                continue
+            
             result = self.decoding.decode(self.head, encoded, encoded_len)[0]
+            
             transcribed_segments.append(
                 {
                     "transcription": result,
