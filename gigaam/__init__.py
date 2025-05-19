@@ -4,6 +4,8 @@ import urllib.request
 from typing import Optional, Tuple, Union
 
 import torch
+os.environ["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "1"
+
 from tqdm import tqdm
 
 from .model import GigaAM, GigaAMASR, GigaAMEmo
