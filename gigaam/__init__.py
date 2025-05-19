@@ -10,6 +10,9 @@ from .model import GigaAM, GigaAMASR, GigaAMEmo
 from .preprocess import load_audio
 from .utils import format_time
 
+from torch.serialization import add_safe_globals
+from omegaconf.dictconfig import DictConfig
+
 # Default cache directory
 _CACHE_DIR = os.path.expanduser("~/.cache/gigaam")
 # Url with model checkpoints
@@ -115,7 +118,9 @@ def load_model(
     model_name, model_path = _download_model(model_name, download_root)
     tokenizer_path = _download_tokenizer(model_name, download_root)
 
-    checkpoint = torch.load(model_path, map_location="cpu")
+    add_safe_globals([DictConfig])
+    checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)
+
 
     if use_flash is not None:
         checkpoint["cfg"].encoder.flash_attn = use_flash
